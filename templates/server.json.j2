@@ -1,0 +1,40 @@
+{
+   "server" : true,
+   "node_name" : {{hostname | to_json}},
+   "domain" : {{consul_domain | to_json}},
+   "advertise_addr" : {{consul_advertise_addr | to_json}},
+   "data_dir" : {{consul_data_dir | to_json}},
+   "client_addr" : {{consul_bind_addr | to_json}},
+   "bootstrap_expect" : {{consul_bootstrap_expect | int}},
+   "retry_join" : {% if retry_join %}{{retry_join | to_json }}{% else %}[{% for peer in groups[consul_group_name] %}{{hostvars[peer]['ansible_default_ipv4']['address'] | to_json }}{% if not loop.last %},{% endif %}{% endfor %}] {% endif %},
+   "rejoin_after_leave": true,
+   "retry_interval": "30s",
+   "enable_script_checks" : true,
+   "datacenter" : {{consul_dc | to_json}},
+   "enable_syslog" : {{consul_enable_syslog | to_json}},
+   "encrypt" : {{consul_encrypt | to_json}},
+   "connect": { "enabled": true },
+   "auto_encrypt": {
+      "allow_tls": true
+   },
+   "ports" : {
+	   "dns" : {{consul_dns_port | to_json}},
+	   "http" : {{consul_http_port | to_json}},
+      "https" : {{consul_https_port | to_json}}
+   },
+   "ui_config" : {
+      "enabled": {{consul_enable_ui | to_json}}
+   },
+  "tls": {
+    "defaults": {
+      "verify_incoming": true,
+      "verify_outgoing": true,
+      "ca_file": "{{consul_cert_dir}}/{{consul_ca_file}}",
+      "cert_file": "{{consul_cert_dir}}/{{consul_advertise_addr}}{{consul_cert_prefix}}",
+      "key_file": "{{consul_cert_dir}}/{{consul_advertise_addr}}{{consul_cert_key_prefix}}"
+    },
+   "internal_rpc": {
+      "verify_server_hostname": false
+   }
+  }
+}

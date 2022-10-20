@@ -1,0 +1,41 @@
+# Consul install values
+consul_url: "https://releases.hashicorp.com/consul"
+consul_platform: "linux_amd64"
+consul_version: "1.13.2"
+consul_path: "/usr/local/bin"
+consul_etc_dir: "/etc/consul"
+consul_data_dir: "/var/consul"
+consul_advertise_addr: "{{inventory_hostname}}"
+consul_bind_addr: "0.0.0.0"
+consul_group_name: "consul_servers"
+
+# Server or Agent setup
+# server is in "consul_group_name" host group
+#consul_server: False 
+consul_enable_syslog: True
+
+# data_center variable
+consul_bootstrap_expect: 2
+consul_encrypt: "Ey1//V6uxYIxodnOivXmtw=="
+consul_dc: "dc"
+consul_enable_ui: True
+consul_dns_port: 8600
+consul_http_port: 8500
+consul_https_port: 8501
+
+# Consul User/Group
+consul_user: consul 
+consul_group: consul
+
+# where you can find encrypted certs
+vault_dir: "{{ playbook_dir }}/../vault/"
+# consul certificates
+consul_cert_dir: /etc/consul/pki
+consul_ca_file: ca.pem
+# cert file is hostname + prefix
+consul_cert_prefix: .pem
+consul_cert_key_prefix: -key.pem
+
+# check definitions
+consul_check_services: 
+  - { name: "ssh", port: "22", tags: ["ssh"], check_cmd: "systemctl status ssh" }

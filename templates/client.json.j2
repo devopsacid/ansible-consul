@@ -1,0 +1,31 @@
+{
+   "server" : false,
+   "node_name" : {{hostname | to_json}},
+   "domain" : {{consul_domain | to_json}},
+   "advertise_addr" : {{consul_advertise_addr | to_json}},
+   "client_addr" : {{consul_bind_addr | to_json}},
+   "retry_join" : {% if retry_join %}{{retry_join | to_json}}{% else %}[{% for peer in groups[consul_group_name] %}{{hostvars[peer]['ansible_default_ipv4']['address'] | to_json }}{% if not loop.last %},{% endif %}{% endfor %}] {% endif %},   
+   "data_dir" : {{consul_data_dir | to_json}},
+   "datacenter" : {{consul_dc | to_json}},
+   "enable_script_checks" : true,
+   "enable_syslog" : {{consul_enable_syslog | to_json}},
+   "encrypt" : {{consul_encrypt | to_json}},
+   "connect": {
+      "enabled" : true
+   },
+   "ports" : {
+      "dns" : {{consul_dns_port | to_json}},
+      "http" : {{consul_http_port | to_json}},
+      "https" : {{consul_https_port | to_json}}   
+   },
+   "auto_encrypt": {
+      "tls" : true
+   },
+   "tls": {
+   "defaults": {
+      "verify_incoming" : true,
+      "verify_outgoing" : false,
+      "ca_file" : "{{consul_cert_dir}}/{{consul_ca_file}}"
+      }
+   }
+}

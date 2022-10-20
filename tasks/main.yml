@@ -1,0 +1,105 @@
+- name: Install prerequisities
+  apt:
+    name: [ "unzip" ]
+
+- name: Add consul group 
+  group:
+    name: "{{ consul_group }}"
+    state: present 
+
+- name: Create consul user 
+  user:
+    name: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    shell: /bin/false 
+    home:  "{{ consul_path }}"
+    state: present
+
+- name: Create consul config dir 
+  file:
+    path:  "{{ item }}"
+    state: directory   
+    mode:  0775
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+  loop: 
+    - "{{ consul_etc_dir }}"
+    - "{{ consul_etc_dir }}/consul.d"
+    - "{{ consul_cert_dir }}"
+    - "{{ consul_data_dir }}"
+
+- name: Install consul from releases.hashicorp.com/consul/
+  unarchive:
+    src: "{{ consul_url }}/{{ consul_version }}/consul_{{ consul_version }}_{{ consul_platform }}.zip" 
+    dest: "{{ consul_path }}" 
+    remote_src: True 
+    validate_certs: True 
+  notify: restart consul
+
+- name: Install server config file
+  template:
+    src: server.json.j2 
+    dest: "{{ consul_etc_dir }}/consul.d/consul.json"
+    mode: 0660
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}" 
+  when: consul_group_name in group_names
+  notify: restart consul 
+
+- name: Install agent config file 
+  template:
+    src: client.json.j2 
+    dest: "{{ consul_etc_dir }}/consul.d/consul.json"
+    mode: 0660
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}" 
+  when: consul_group_name not in group_names
+  notify: restart consul
+
+- name: Copy CA certificates to server 
+  copy:
+    src: "{{ playbook_dir }}/../vault/infra/ssl/ca.pem.encrypted"
+    dest: "{{ consul_cert_dir }}/ca.pem"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: 0600
+    decrypt: yes
+  notify: restart consul
+
+- name: Copy cert and key cert to server 
+  copy:
+    src: "{{ playbook_dir }}/../vault/infra/ssl/{{item}}.encrypted"
+    dest: "{{ consul_cert_dir }}/{{item}}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: 0600
+    decrypt: yes
+  with_items:
+    - "{{inventory_hostname}}.pem"
+    - "{{inventory_hostname}}-key.pem"
+  notify: restart consul
+  when: consul_group_name is defined and consul_group_name in group_names
+
+- name: Set service templates
+  template:
+    src: "service.json.j2"
+    dest: "{{ consul_etc_dir }}/consul.d/service-{{item.name}}.json"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: 0660
+  with_items:
+    - "{{consul_check_services}}"
+  notify: restart consul
+
+- name: Install consul service 
+  template: 
+    src: consul.service.j2
+    dest: /etc/systemd/system/consul.service
+    mode: 0664
+
+- name: Start consul service 
+  systemd:
+    name: consul.service
+    state: started 
+    enabled: True
+    daemon_reload: True 

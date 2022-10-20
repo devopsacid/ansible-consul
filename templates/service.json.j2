@@ -1,0 +1,14 @@
+{
+    "service": {
+      "name": "{{ item.name }}",
+      "tags": [{% for tag in item.tags %}{{ tag | to_json }}{% if not loop.last %},{% endif %}{% endfor %}],
+      "port": {{ item.port | int }}{% if item.check_cmd %},
+      "checks" : [ {
+          "args": ["/bin/bash","-c",{{ item.check_cmd | to_json }}],
+          "interval": "30s",
+          "timeout": "60s"
+        } ]
+    {% endif %} 
+    }
+  }
+  

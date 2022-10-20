@@ -1,0 +1,13 @@
+[Unit]
+Description=Consul Service 
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+User={{ consul_user }}
+ExecStart={{ consul_path }}/consul agent -config-dir {{consul_etc_dir}}/consul.d
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=INT
+
+[Install]
+WantedBy=multi-user.target
